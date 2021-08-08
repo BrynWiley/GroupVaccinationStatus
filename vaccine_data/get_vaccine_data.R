@@ -1,8 +1,3 @@
-# library(tidyverse)
-# library(dplyr)
-# library(lubridate)
-# library(RSocrata)
-# library(cansim)
 library(dplyr)
 library(magrittr)
 library(readr)
