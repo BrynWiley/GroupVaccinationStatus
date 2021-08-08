@@ -213,5 +213,6 @@ get_canada_pop_data <- function(){
     mutate(Date=as_date(Date))
   
 }
+setwd("./vaccine_data")
 data<- get_vaccine_data()
 write_rds(data,"vaccine_data.rds")
