@@ -87,7 +87,9 @@ ui <- fluidPage(
                         ),
                         column(width=4,
                                tags$img(src="virus_image.png",width="300px"))
-                      )
+                      ),
+                      hr(),
+                      p("Created by Bryn Wiley. Thank you to Dr. Sarah Otto, Dr. Daniel J. McDonald, and the BC COVID-19 Modelling Group for their substantial input and suggestions.")
              ),
              #First Tab##########################################################################################
              tabPanel("Who's in the group?",value="first",
@@ -304,7 +306,9 @@ ui <- fluidPage(
                       p(tags$strong("Data sources:")),
                       p("Centers for Disease Control and Prevention. (2021). COVID-19 Vaccinations in the United States,Jurisdiction [Data set]. Retrieved from https://data.cdc.gov/Vaccinations/COVID-19-Vaccinations-in-the-United-States-Jurisdi/unsk-b7fc"),
                       p("Mathieu, E., Ritchie, H., Ortiz-Ospina, E. et al. A global database of COVID-19 vaccinations. Nat Hum Behav (2021). https://doi.org/10.1038/s41562-021-01122-8"),
-                      p("Public Health Agency of Canada. Canadian COVID-19 vaccination coverage report. Ottawa: Public Health Agency of Canada. https://health-infobase.canada.ca/covid-19/vaccination-coverage/")
+                      p("Public Health Agency of Canada. Canadian COVID-19 vaccination coverage report. Ottawa: Public Health Agency of Canada. https://health-infobase.canada.ca/covid-19/vaccination-coverage/"),
+                      p(tags$strong("All relevant code "), "is hosted at ",tags$a(href="https://github.com/BrynWiley/GroupVaccinationStatus", "https://github.com/BrynWiley/GroupVaccinationStatus")),
+                      p(tags$strong("Questions or comments? "),"Email Bryn Wiley at",tags$a(href="mailto:wiley@zoology.ubc.ca", "wiley@zoology.ubc.ca"))
              )
              
   ) 
