@@ -39,7 +39,6 @@ check_df <- function(pop_data,vaccine_data,default_option,default_portion){
   
   not_used_variables = setdiff(colnames(pop_data),used)
   missing_variables = setdiff(required,colnames(pop_data))
-  
   missing_locations=character(0)
   missing_regions=character(0)
   if(length(missing_variables)==0){
@@ -50,7 +49,7 @@ check_df <- function(pop_data,vaccine_data,default_option,default_portion){
   }
   
   to_return <- list(
-    missing = missing_variables,
+    missing_variables = missing_variables,
     not_used = not_used_variables,
     pop_data = pop_data,
     bad_locations=missing_locations,

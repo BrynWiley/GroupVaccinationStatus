@@ -13,10 +13,10 @@ library(tidyverse)
 #' sanitized_data: the sanitized dataset (if possible)
 evaluate_dataset <- function(pop_data, vaccine_data, default_option, default_portion){
   results <- check_df(pop_data, vaccine_data, default_option, default_portion)
-  
   if(length(results$missing_variables)>0){
     return(list(
-      message=paste("Error: missing required variables",paste(results$missing_variables,collapse=","),sep=" "),
+      message=paste("Error: missing required variables: ",paste(results$missing_variables,collapse=","),
+                    ". Refresh the app to restore defaults.",sep=" "),
       sanitized_data=NULL,
       good=FALSE
     ))
