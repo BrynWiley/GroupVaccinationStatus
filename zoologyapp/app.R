@@ -15,6 +15,7 @@ library(magrittr)
 library(shiny)
 library(lubridate)
 library(rhandsontable)
+library(investr)
 
 #default option
 default_option <- NA

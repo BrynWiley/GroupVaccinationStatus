@@ -18,7 +18,7 @@ result_bar_plot <- function(results_data,total_data,default_option,uncertainty,p
     certain_plot <- results_data %>%
       ungroup()%>%
       categorize(.,default_option)%>%
-      pivot_longer(
+      tidyr::pivot_longer(
         cols=c(Proportion_fully,Proportion_partially,Proportion_unvacc)
       )%>% 
       inner_join(tibble(
@@ -32,7 +32,7 @@ result_bar_plot <- function(results_data,total_data,default_option,uncertainty,p
     certain_plot <- results_data %>%
       ungroup()%>%
       categorize(.,default_option)%>%
-      pivot_longer(
+      tidyr::pivot_longer(
         cols=c(Number_fully,Number_partially,Number_unvacc)
       )%>% 
       inner_join(tibble(
