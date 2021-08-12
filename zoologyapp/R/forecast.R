@@ -1,11 +1,11 @@
 #This file contains function s related to predictions
 #for the shiny app (namely logistic and linear models)
 
-library(tidyverse)
-library(lubridate)
+# library(tidyverse)
+# library(lubridate)
 #library(tseries)
 #library(imputeTS)
-library(investr)
+# library(investr)
 
 
 #' A function to return a logistic predition model. Attempts to fit a logistic model with

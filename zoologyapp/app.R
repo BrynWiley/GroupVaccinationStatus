@@ -1,9 +1,20 @@
 
+# library(shiny)
+# library(tidyverse)
+# library(rhandsontable)
+# library(lubridate)
+library(tibble)
+library(ggplot2)
+library(tidyr)
+library(readr)
+library(purrr)
+library(dplyr)
+library(stringr)
+library(forcats)
+library(magrittr)
 library(shiny)
-#library(gridExtra)
-library(tidyverse)
-library(rhandsontable)
 library(lubridate)
+library(rhandsontable)
 
 #default option
 default_option <- NA
@@ -351,11 +362,9 @@ server <- function(input, output,session) {
   observe({
     Location <- input$location_input
     Region <- input$region_input
-    
-    if(Region==" "){
+    if(Region==" " | Region == ""){
       Region=default_option
     }
-    
     Regions <- unique(vaccine_data$Region[vaccine_data$Location==Location])
     
     
@@ -387,6 +396,15 @@ server <- function(input, output,session) {
     Location <- input$location_input
     Region <- input$region_input
     Age <- input$age_input
+    if(Location=="" | Location == " "){
+      Location = NA
+    }
+    if(Region=="" | Region == " "){
+      Region = NA
+    }
+    if(Age=="" | Age == " "){
+      Age = NA
+    }
     `Number of People` <- as.numeric(input$people_input)
     `Maximum Portion Vaccinated` <- as.numeric(input$portion_input)
     row <- c(Location,Region,Age,`Number of People`,`Maximum Portion Vaccinated`)
