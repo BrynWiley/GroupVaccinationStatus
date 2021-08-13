@@ -12,9 +12,11 @@
 #'@param return A ggplot object bar plot with the numbers or relative percentages of each vaccination status for the entire group and per category of individual
 
 result_bar_plot <- function(results_data,total_data,default_option,uncertainty,percent){
+  print("begin result_bar_plot function")
   certain_plot <- NULL
   
   if(percent){
+    print("Percent option checked, no debugging takes place")
     certain_plot <- results_data %>%
       ungroup()%>%
       categorize(.,default_option)%>%
@@ -34,24 +36,40 @@ result_bar_plot <- function(results_data,total_data,default_option,uncertainty,p
       ggplot(aes(x=group,y=value*100,fill=factor(Category)))+geom_bar(position="stack",stat="identity")+
       xlab("")+ylab("Percent of Group")+ylim(0,100)
   } else{
+    print("percent option unchecked (not scaling by percent)")
+    print("Begin categorize() call")
     certain_plot <- results_data %>%
       ungroup()%>%
-      categorize(.,default_option)%>%
+      categorize(.,default_option)
+    print(certain_plot)
+    print("End categorize() call")
+    print("Begin gather() call")
       # tidyr::pivot_longer(
       #   cols=c(Number_fully,Number_partially,Number_unvacc)
       # )%>% 
-      gather(
+    certain_plot <- certain_plot %>% gather(
         "name",
         "value",
         Number_fully,Number_partially,Number_unvacc
-      )%>%
-      inner_join(tibble(
+      )
+    print(certain_plot)
+    print("End gather() call")
+    print("Begin inner_join() call")
+    certain_plot <- certain_plot %>% inner_join(tibble(
         name=c("Number_fully","Number_partially","Number_unvacc"),
         group=c("Fully Vaccinated","Partially Vaccinated","Unvaccinated")
-      ))%>%
-      mutate(group=factor(group,levels=c("Unvaccinated","Partially Vaccinated","Fully Vaccinated")))%>%
+      ))
+    print(certain_plot)
+    print("End inner_join() call")
+    print("Begin mutate() call")
+    certain_plot <- certain_plot %>% mutate(group=factor(group,levels=c("Unvaccinated","Partially Vaccinated","Fully Vaccinated")))
+    print(certain_plot)
+    print("End mutate() call")
+    print("Begin ggplot call")
+    certain_plot <- certain_plot %>%
       ggplot(aes(x=group,y=value,fill=factor(Category)))+geom_bar(position="stack",stat="identity")+
       xlab("")+ylab("Number of People")
+    print("End ggplot call")
   }
   certain_plot <- certain_plot + theme_bw()+theme(legend.title=element_blank())+
     scale_fill_viridis_d()+coord_cartesian(expand=FALSE)
@@ -66,6 +84,7 @@ result_bar_plot <- function(results_data,total_data,default_option,uncertainty,p
                       inherit.aes = FALSE,size=1.2)
     )
   } else {
+    print("begin geom_errorbar call")
     ymax <- max(total_data$`Number Upper Bound`*1.1)
     return(
       certain_plot + 

@@ -583,8 +583,10 @@ server <- function(input, output,session) {
   })
   
   #Output bar chart with prediction intervals
-  output$bar_plot <- renderPlot(
+  output$bar_plot <- renderPlot({
+    print("begin renderPlot call")
     result_bar_plot(vals$results, vals$total,default_option,TRUE,input$percent)
+  }
   )
   #Output total totals data table
   output$totals_table <- renderDataTable({
