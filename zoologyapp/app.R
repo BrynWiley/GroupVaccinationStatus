@@ -1,4 +1,4 @@
-
+cat("Release number 1.0\n")
 # library(shiny)
 # library(tidyverse)
 # library(rhandsontable)
@@ -17,6 +17,7 @@ library(lubridate)
 library(rhandsontable)
 library(investr)
 
+options(shiny.fullstacktrace=TRUE)
 #default option
 default_option <- NA
 default_portion <- 1.0
@@ -36,6 +37,7 @@ download.file(githubURL,temp,method="curl")
 bad_locations <- read_rds(temp)
 unlink(temp)
 #setwd("..")
+
 
 
 
@@ -584,7 +586,7 @@ server <- function(input, output,session) {
   
   #Output bar chart with prediction intervals
   output$bar_plot <- renderPlot({
-    print("begin renderPlot call")
+    cat("begin renderPlot call")
     result_bar_plot(vals$results, vals$total,default_option,TRUE,input$percent)
   }
   )
