@@ -18,9 +18,14 @@ result_bar_plot <- function(results_data,total_data,default_option,uncertainty,p
     certain_plot <- results_data %>%
       ungroup()%>%
       categorize(.,default_option)%>%
-      tidyr::pivot_longer(
-        cols=c(Proportion_fully,Proportion_partially,Proportion_unvacc)
-      )%>% 
+      # tidyr::pivot_longer(
+      #   cols=c(Proportion_fully,Proportion_partially,Proportion_unvacc)
+      # )%>% 
+      gather(
+        "name",
+        "value",
+        Proportion_fully,Proportion_partially,Proportion_unvacc
+      )%>%
       inner_join(tibble(
         name=c("Proportion_fully","Proportion_partially","Proportion_unvacc"),
         group=c("Fully Vaccinated","Partially Vaccinated","Unvaccinated")
@@ -32,9 +37,14 @@ result_bar_plot <- function(results_data,total_data,default_option,uncertainty,p
     certain_plot <- results_data %>%
       ungroup()%>%
       categorize(.,default_option)%>%
-      tidyr::pivot_longer(
-        cols=c(Number_fully,Number_partially,Number_unvacc)
-      )%>% 
+      # tidyr::pivot_longer(
+      #   cols=c(Number_fully,Number_partially,Number_unvacc)
+      # )%>% 
+      gather(
+        "name",
+        "value",
+        Number_fully,Number_partially,Number_unvacc
+      )%>%
       inner_join(tibble(
         name=c("Number_fully","Number_partially","Number_unvacc"),
         group=c("Fully Vaccinated","Partially Vaccinated","Unvaccinated")
