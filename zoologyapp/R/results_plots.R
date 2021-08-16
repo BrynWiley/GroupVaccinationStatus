@@ -36,36 +36,24 @@ result_bar_plot <- function(results_data,total_data,default_option,uncertainty,p
       ggplot(aes(x=group,y=value*100,fill=factor(Category)))+geom_bar(position="stack",stat="identity")+
       xlab("")+ylab("Percent of Group")+ylim(0,100)
   } else{
-    cat("percent option unchecked (not scaling by percent)\n")
-    cat("Begin categorize() call\n")
     certain_plot <- results_data %>%
       ungroup()%>%
-      categorize(.,default_option)
-    cat("End categorize() call\n")
-    cat("Begin gather() call\n")
+      categorize(.,default_option)%>%
       # tidyr::pivot_longer(
       #   cols=c(Number_fully,Number_partially,Number_unvacc)
       # )%>% 
-    certain_plot <- certain_plot %>% gather(
+      gather(
         "name",
         "value",
         Number_fully,Number_partially,Number_unvacc
-      )
-    cat("End gather() call\n")
-    cat("Begin inner_join() call\n")
-    certain_plot <- certain_plot %>% inner_join(tibble(
+      )%>% 
+      inner_join(tibble(
         name=c("Number_fully","Number_partially","Number_unvacc"),
         group=c("Fully Vaccinated","Partially Vaccinated","Unvaccinated")
-      ))
-    cat("End inner_join() call\n")
-    cat("Begin mutate() call\n")
-    certain_plot <- certain_plot %>% mutate(group=factor(group,levels=c("Unvaccinated","Partially Vaccinated","Fully Vaccinated")))
-    cat("End mutate() call\n")
-    cat("Begin ggplot call\n")
-    certain_plot <- certain_plot %>%
+      ))%>% 
+      mutate(group=factor(group,levels=c("Unvaccinated","Partially Vaccinated","Fully Vaccinated")))%>%
       ggplot(aes(x=group,y=value,fill=factor(Category)))+geom_bar(position="stack",stat="identity")+
       xlab("")+ylab("Number of People")
-    cat("End ggplot call\n")
   }
   certain_plot <- certain_plot + theme_bw()+theme(legend.title=element_blank())+
     scale_fill_viridis_d()+coord_cartesian(expand=FALSE)
@@ -80,7 +68,6 @@ result_bar_plot <- function(results_data,total_data,default_option,uncertainty,p
                       inherit.aes = FALSE,size=1.2)
     )
   } else {
-    cat("begin geom_errorbar call\n")
     ymax <- max(total_data$`Number Upper Bound`*1.1)
     return(
       certain_plot + 
