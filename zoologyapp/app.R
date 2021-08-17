@@ -17,7 +17,6 @@ library(lubridate)
 library(rhandsontable)
 library(investr)
 
-options(shiny.fullstacktrace=TRUE)
 #default option
 default_option <- NA
 default_portion <- 1.0
