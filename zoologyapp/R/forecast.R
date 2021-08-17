@@ -192,14 +192,19 @@ get_predictions <- function(pop_data, prediction_date,vaccine_data,forecast_meth
     group_modify(function(data,key){
       max_rate = unique(data$`Maximum Portion Vaccinated`)
       if(prediction_date<=today()){
+        max_date <- max(data$Date[data$Date <= prediction_date & !is.na(data$Portion_1) & !is.na(data$Portion_2)])
+        if(is.infinite(max_date)){
+          max_date <- min(data$Date[!is.na(data$Portion_1) & !is.na(data$Portion_2)])
+        }
+        index = (data$Date == max_date)
         return(tibble(
           Date=prediction_date,
-          Portion_1=data$Portion_1[max(data$Date<=prediction_date)],
-          Portion_1_lower=data$Portion_1[max(data$Date<=prediction_date)],
-          Portion_1_upper=data$Portion_1[max(data$Date<=prediction_date)],
-          Portion_2=data$Portion_2[max(data$Date<=prediction_date)],
-          Portion_2_lower=data$Portion_2[max(data$Date<=prediction_date)],
-          Portion_2_upper=data$Portion_2[max(data$Date<=prediction_date)],
+          Portion_1=data$Portion_1[index],
+          Portion_1_lower=data$Portion_1[index],
+          Portion_1_upper=data$Portion_1[index],
+          Portion_2=data$Portion_2[index],
+          Portion_2_lower=data$Portion_2[index],
+          Portion_2_upper=data$Portion_2[index],
         ))
       }
       
