@@ -24,7 +24,9 @@ predict_logistic <- function(x,y,max_level){
   )
   #We don't allow asymptotes below the current value
   min_level <- max(y)
+  print(1)
   model <- tryCatch({
+    print(2)
     SS <- getInitial(y~SSlogis(x,Asym,xmid,scal),data=df)
     #Make sure the asymptote (SS[1] is between min_level and max_level)
     if(SS[1]>max_level & max_level > max(y)){
@@ -57,7 +59,11 @@ predict_logistic <- function(x,y,max_level){
     #If the model fit doesn't fit, use a linear regression instead
     error=function(c){
       lm(y~x,data=df)
+    },
+    warning=function(c){
+      lm(y~x,data=df)
     })
+  print(3)
   return(model)
 }
 
@@ -135,8 +141,20 @@ vaccine_forecast <- function(observations,forecast_method,max_level,prediction_d
       lower=rep(0,num_dates)
     } else {
       reg <- predict_logistic(as.numeric(observations$date),observations$level,max_level)
-      predictions <- predFit(reg,newdata=data.frame(x=as.numeric(prediction_dates)),
-                             interval="prediction",level=0.95)
+      predictions <- tryCatch({
+        predFit(reg,newdata=data.frame(x=as.numeric(prediction_dates)),
+                interval="prediction",level=0.95)
+      },
+      error=function(c){
+        reg <- lm(level~date,data=observations)
+        predFit(reg,newdata=data.frame(x=as.numeric(prediction_dates)),
+                interval="prediction",level=0.95)
+      },
+      warning=function(c){
+        reg <- lm(level~date,data=observations)
+        predFit(reg,newdata=data.frame(x=as.numeric(prediction_dates)),
+                interval="prediction",level=0.95)
+      })
       if(nrow(predictions)==1){
         if(predictions[1]>max_level){
           predictions <- rep(max_level,3)
@@ -205,6 +223,9 @@ get_predictions <- function(pop_data, prediction_date,vaccine_data,forecast_meth
           Portion_2=data$Portion_2[index],
           Portion_2_lower=data$Portion_2[index],
           Portion_2_upper=data$Portion_2[index],
+          Portion_3=data$Portion_3[index],
+          Portion_3_lower=data$Portion_3[index],
+          Portion_3_upper=data$Portion_3[index],
         ))
       }
       
@@ -216,6 +237,9 @@ get_predictions <- function(pop_data, prediction_date,vaccine_data,forecast_meth
         Portion_2=numeric(),
         Portion_2_lower=numeric(),
         Portion_2_upper=numeric(),
+        Portion_3=numeric(),
+        Portion_3_lower=numeric(),
+        Portion_3_upper=numeric(),
       )
       
       prediction_dates <- today()
@@ -233,10 +257,18 @@ get_predictions <- function(pop_data, prediction_date,vaccine_data,forecast_meth
         select(Date,Portion_2)%>%
         rename(date=Date,level=Portion_2)
       
+      to_pass_third = data %>%
+        filter(!is.na(Portion_3))%>%
+        select(Date,Portion_3)%>%
+        rename(date=Date,level=Portion_3)
+      
+      print(to_pass_first)
       predictions_first <- vaccine_forecast(to_pass_first,forecast_method,max_rate,prediction_dates)
       
       
       predictions_second <- vaccine_forecast(to_pass_second,forecast_method,max(predictions_first$fit),prediction_dates)
+      
+      predictions_third <- vaccine_forecast(to_pass_third,forecast_method,max(predictions_second$fit),prediction_dates)
       
       to_return <- add_row(to_return,
                            Date=prediction_dates,
@@ -245,7 +277,10 @@ get_predictions <- function(pop_data, prediction_date,vaccine_data,forecast_meth
                            Portion_1_upper=predictions_first$upper,
                            Portion_2=predictions_second$fit,
                            Portion_2_lower=predictions_second$lower,
-                           Portion_2_upper=predictions_second$upper
+                           Portion_2_upper=predictions_second$upper,
+                           Portion_3=predictions_third$fit,
+                           Portion_3_lower=predictions_third$lower,
+                           Portion_3_upper=predictions_third$upper
       )
       
       return(to_return)

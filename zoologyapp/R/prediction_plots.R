@@ -54,15 +54,23 @@ prediction_plots <- function(prediction_data, vaccine_data, bad_locations, confi
   vaccine_data_2_filtered <- vaccine_data %>%
     filter(!is.na(Portion_2))%>%
     mutate(linetype=if_else(Category %in% bad_locations, "dashed","solid"))
+  vaccine_data_3_filtered <- vaccine_data %>%
+    filter(!is.na(Portion_3))%>%
+    mutate(linetype=if_else(Category %in% bad_locations, "dashed","solid"))
 
   limited_1 <- vaccine_data_1_filtered %>%
     group_by(Category)%>%
     summarise(Date=Date, Portion_1=Portion_1,n=n())%>%
     ungroup()%>%
     filter(n<10)
-  limited_2 <- vaccine_data_1_filtered %>%
+  limited_2 <- vaccine_data_2_filtered %>%
     group_by(Category)%>%
     summarise(Date=Date, Portion_2=Portion_2,n=n())%>%
+    ungroup()%>%
+    filter(n<10)
+  limited_3 <- vaccine_data_3_filtered %>%
+    group_by(Category)%>%
+    summarise(Date=Date, Portion_3=Portion_3,n=n())%>%
     ungroup()%>%
     filter(n<10)
   
@@ -93,9 +101,23 @@ prediction_plots <- function(prediction_data, vaccine_data, bad_locations, confi
       xlab("Date")+ylab("Proportion with two doses")+
       ylim(0,1)
     
+    portion_3_graph <- prediction_data %>%
+      ungroup()%>% 
+      select(Date, Portion_3, Portion_3_lower, Portion_3_upper,Category)%>%
+      ggplot(aes(x=Date,y=Portion_3,ymax=Portion_3_upper,ymin=Portion_3_lower,color=factor(Category),fill=factor(Category)))+
+      geom_point()+geom_ribbon(alpha=0.25)+
+      geom_line(data=vaccine_data_3_filtered,aes(x=Date,y=Portion_3,color=factor(Category),linetype=linetype),inherit.aes = FALSE,size=1)+
+      geom_point(data=limited_3,aes(x=Date,y=Portion_3,color=factor(Category)),inherit.aes = FALSE,shape=4,size=3)+
+      scale_linetype_identity()+
+      scale_color_viridis_d()+scale_fill_viridis_d()+
+      theme_bw()+theme(legend.title = element_blank())+
+      xlab("Date")+ylab("Proportion with two doses")+
+      ylim(0,1)
+    
     return(list(
       Portion_1_plot=portion_1_graph,
-      Portion_2_plot=portion_2_graph
+      Portion_2_plot=portion_2_graph,
+      Portion_3_plot=portion_3_graph
     ))
   } else {
     portion_1_graph <- prediction_data %>%
@@ -124,9 +146,23 @@ prediction_plots <- function(prediction_data, vaccine_data, bad_locations, confi
       xlab("Date")+ylab("Proportion with two doses")+
       ylim(0,1)
     
+    portion_3_graph <-  prediction_data %>%
+      ungroup()%>% 
+      select(Date, Portion_3,Category)%>%
+      ggplot(aes(x=Date,y=Portion_3,color=factor(Category)))+
+      geom_point()+
+      geom_line(data=vaccine_data_3_filtered,aes(x=Date,y=Portion_3,color=factor(Category),linetype=linetype),inherit.aes = FALSE,size=1)+
+      geom_point(data=limited_3,aes(x=Date,y=Portion_3,color=factor(Category)),inherit.aes = FALSE,shape=4,size=3)+
+      scale_linetype_identity()+
+      scale_color_viridis_d()+scale_fill_viridis_d()+
+      theme_bw()+theme(legend.title = element_blank())+
+      xlab("Date")+ylab("Proportion with two doses")+
+      ylim(0,1)
+    
     return(list(
       Portion_1_plot=portion_1_graph,
-      Portion_2_plot=portion_2_graph
+      Portion_2_plot=portion_2_graph,
+      Portion_3_plot=portion_3_graph
     ))
   }
   

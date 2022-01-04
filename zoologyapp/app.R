@@ -18,14 +18,9 @@ default_portion <- 1.0
 #setwd("./data")
 temp <- tempfile()
 githubURL <- ("https://raw.githubusercontent.com/BrynWiley/GroupVaccinationStatus/main/vaccine_data/vaccine_data.rds")
-#download.file(githubURL,"vaccine_data.rds", method="curl")
-#vaccine_data <- read_rds("vaccine_data.rds")
 download.file(githubURL,temp,method="curl")
 vaccine_data <- read_rds(temp)
-unlink(temp)
 githubURL <- ("https://raw.githubusercontent.com/BrynWiley/GroupVaccinationStatus/main/vaccine_data/bad_locations.rds")
-#download.file(githubURL,"bad_locations.rds", method="curl")
-#bad_locations <-read_rds("bad_locations.rds")
 download.file(githubURL,temp,method="curl")
 bad_locations <- read_rds(temp)
 unlink(temp)
@@ -78,7 +73,7 @@ ui <- fluidPage(
                         titlePanel("COVID-19 Group Vaccine Status Estimation"),
                         column(width=8,
                                h3("Estimate the vaccination status of a group of people at a future date"),
-                               p("This app estimates the numbers of fully vaccinated, partially vaccinated, and unvaccinated people in a group at a future date. 
+                               p("This app estimates the numbers of boosted, fully vaccinated, partially vaccinated, and unvaccinated people in a group at a future date. 
                                  These people can be from different locations and from different age groups subject to data availability."),
                                div(
                                  p(tags$strong("This app consists of the following steps:")),
@@ -235,7 +230,9 @@ ui <- fluidPage(
                                       plotOutput("first_plot"),
                                       hr(),
                                       h3("Portion fully vaccinated, by category"),
-                                      plotOutput("second_plot")
+                                      plotOutput("second_plot"),
+                                      h3("Proportion boosted, by category"),
+                                      plotOutput("third_plot")
                                     ),
                                     sidebarPanel = sidebarPanel(
                                       
@@ -255,7 +252,10 @@ ui <- fluidPage(
                                         "to_graph",
                                         "Graphed Categories",
                                         NULL
-                                      )
+                                      ),
+                                      hr(),
+                                      sliderInput("past_months","Months in the past to plot past vaccination data",
+                                                  min=1,max=24,value=20)
                                       
                                     )
                       )
@@ -304,6 +304,9 @@ ui <- fluidPage(
                         There are some countries who will primarily report total doses given instead of first or second doses. If a country has not reported a quantity for first or second doses within
                         the past month we assume that the proportion fully vaccinated remains constant from the last date it was reported and all new reported doses are first doses. This is conservative with regards 
                         to fully vaccinated individuals but optimistic to the number partially vaccinated. Currently, the countries to which this applies are: ", sub("(.*),", "\\1 and",paste(bad_locations, collapse = ", "))),
+                      p(tags$strong("Booster data "),"for many locations outside of Canada and the United States is reported as the number of COVID-19 vaccination booster doses administered
+                         per capita. Specifically, this is the metric used by the Our World in Data database. This likely slightly overestimates the proportion of boosted individuals, as some individuals may have 
+                        received two or more booster doses."),
                       p(tags$strong("Prediction using linear regression"), " uses available data from the past 3 weeks to estimate a linear model with the ", code("lm")," function in R. 
                         If there are two or less observations in this period, regression is deemed not viable and so the vaccination rate is held constant."),
                       p(tags$strong("Prediction using logistic regression"), " uses available data from the past 6 weeks to estimate a logistic (s-shaped) curve using the ", code("nls"), " function in R.
@@ -332,6 +335,10 @@ ui <- fluidPage(
 
 
 server <- function(input, output,session) {
+  session$onSessionEnded(function() {
+    stopApp()
+  })
+  
   #Reactive values
   vals <- reactiveValues(
     date=starting_date,
@@ -362,13 +369,16 @@ server <- function(input, output,session) {
       Region=default_option
     }
     Regions <- unique(vaccine_data$Region[vaccine_data$Location==Location])
-    
-    
+    na_location <- which(is.na(Regions))
+    Regions <- c(NA,Regions[-na_location])
     if(Region %in% Regions){
       Ages <- unique(vaccine_data$Age[vaccine_data$Location==Location & vaccine_data$Region==Region])
+      
       if(compareNA(Region,default_option)){
         Ages <- unique(vaccine_data$Age[vaccine_data$Location==Location & is.na(vaccine_data$Region)])
       }
+      na_location <- which(is.na(Ages))
+      Ages <- c(NA,Ages[-na_location])
       Ages[is.na(Ages)] <- " "
       updateSelectInput(session=session,inputId = "age_input",
                         choices= Ages)
@@ -380,6 +390,8 @@ server <- function(input, output,session) {
     } else {
       Regions[is.na(Regions)] <- " "
       Ages <- unique(vaccine_data$Age[vaccine_data$Location==Location & is.na(vaccine_data$Region)])
+      na_location <- which(is.na(Ages))
+      Ages <- c(NA,Ages[-na_location])
       updateSelectInput(session=session,inputId = "age_input",
                         choices= Ages)
       updateSelectInput(session=session,inputId = "region_input",
@@ -539,8 +551,9 @@ server <- function(input, output,session) {
       filter(Category %in% categories)
     
     plots <- prediction_plots(predictions_category,vaccine_data_selected,bad_locations,uncertainty)
-    output$first_plot <- renderPlot({plots[[1]]})
-    output$second_plot <- renderPlot({plots[[2]]})
+    output$first_plot <- renderPlot({plots[[1]] + xlim(today()-months(input$past_months),input$date_input)})
+    output$second_plot <- renderPlot({plots[[2]]+ xlim(today()-months(input$past_months),input$date_input)})
+    output$third_plot <- renderPlot({plots[[3]]+ xlim(today()-months(input$past_months),input$date_input)})
   })
   observeEvent(input$tofourth,{
     updateTabsetPanel(session,"mainpage",selected="fourth") 
@@ -609,13 +622,15 @@ server <- function(input, output,session) {
       results <- results %>%
         mutate(`Percent Unvaccinated`=round(Proportion_unvacc*100),
                `Percent Partially Vaccinated`=round(Proportion_partially*100),
-               `Percent Fully Vaccinated`=round(Proportion_fully*100))%>%
+               `Percent Fully Vaccinated`=round(Proportion_fully*100),
+               `Percent Boosted`=round(Proportion_boosted*100))%>%
         select(Location, Region, Age, starts_with("Percent"))
     } else {
       results <- results %>%
         mutate(`Persons Unvaccinated`=round(Number_unvacc),
                `Persons Partially Vaccinated`=round(Number_partially),
-               `Persons Fully Vaccinated`=round(Number_fully))%>%
+               `Persons Fully Vaccinated`=round(Number_fully),
+               `Persons Boosted`=round(Number_boosted))%>%
         select(Location, Region, Age, starts_with("Persons"))
     }
     results
@@ -651,13 +666,15 @@ server <- function(input, output,session) {
         results <- results %>%
           mutate(`Percent Unvaccinated`=Proportion_unvacc*100,
                  `Percent Partially Vaccinated`=Proportion_partially*100,
-                 `Percent Fully Vaccinated`=Proportion_fully*100)%>%
+                 `Percent Fully Vaccinated`=Proportion_fully*100,
+                 `Percent Boosted`=Proportion_boosted*100)%>%
           select(Location, Region, Age, starts_with("Percent"))
       } else {
         results <- results %>%
           mutate(`Persons Unvaccinated`=Number_unvacc,
                  `Persons Partially Vaccinated`=Number_partially,
-                 `Persons Fully Vaccinated`=Number_fully)%>%
+                 `Persons Fully Vaccinated`=Number_fully,
+                 `Persons Boosted`=Number_boosted)%>%
           select(Location, Region, Age, starts_with("Persons"))
       }
       write_csv(results,file)
