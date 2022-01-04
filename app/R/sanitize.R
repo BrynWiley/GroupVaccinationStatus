@@ -1,9 +1,9 @@
 #This file contains checks and functions for modifying 
 #user input on population data so it aligns with existing data
-
-library(tidyverse)
-library(lubridate)
-library(stringr)
+# 
+# library(tidyverse)
+# library(lubridate)
+# library(stringr)
 
 
 #A simple function to allow equality comparisons with NA values

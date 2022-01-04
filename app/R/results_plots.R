@@ -1,5 +1,5 @@
-library(tidyverse)
-library(lubridate)
+# library(tidyverse)
+# library(lubridate)
 
 #'A function to return the bar plot used for displaying the numbers and relative 
 #'percentages of each vaccination status (full, partial, or unvaccinted),
@@ -12,34 +12,46 @@ library(lubridate)
 #'@param return A ggplot object bar plot with the numbers or relative percentages of each vaccination status for the entire group and per category of individual
 
 result_bar_plot <- function(results_data,total_data,default_option,uncertainty,percent){
+  cat("begin result_bar_plot function\n")
   certain_plot <- NULL
   
   if(percent){
+    cat("Percent option checked, no debugging takes place\n")
     certain_plot <- results_data %>%
       ungroup()%>%
       categorize(.,default_option)%>%
-      tidyr::pivot_longer(
-        cols=c(Proportion_fully,Proportion_partially,Proportion_unvacc)
-      )%>% 
+      # tidyr::pivot_longer(
+      #   cols=c(Proportion_fully,Proportion_partially,Proportion_unvacc)
+      # )%>% 
+      gather(
+        "name",
+        "value",
+        Proportion_boosted,Proportion_fully,Proportion_partially,Proportion_unvacc
+      )%>%
       inner_join(tibble(
-        name=c("Proportion_fully","Proportion_partially","Proportion_unvacc"),
-        group=c("Fully Vaccinated","Partially Vaccinated","Unvaccinated")
+        name=c("Proportion_boosted", "Proportion_fully","Proportion_partially","Proportion_unvacc"),
+        group=c("Boosted", "Fully Vaccinated","Partially Vaccinated","Unvaccinated")
       ))%>%
-      mutate(group=factor(group,levels=c("Unvaccinated","Partially Vaccinated","Fully Vaccinated")))%>%
+      mutate(group=factor(group,levels=c("Unvaccinated","Partially Vaccinated","Fully Vaccinated","Boosted")))%>%
       ggplot(aes(x=group,y=value*100,fill=factor(Category)))+geom_bar(position="stack",stat="identity")+
       xlab("")+ylab("Percent of Group")+ylim(0,100)
   } else{
     certain_plot <- results_data %>%
       ungroup()%>%
       categorize(.,default_option)%>%
-      tidyr::pivot_longer(
-        cols=c(Number_fully,Number_partially,Number_unvacc)
+      # tidyr::pivot_longer(
+      #   cols=c(Number_fully,Number_partially,Number_unvacc)
+      # )%>% 
+      gather(
+        "name",
+        "value",
+        Number_boosted,Number_fully,Number_partially,Number_unvacc
       )%>% 
       inner_join(tibble(
-        name=c("Number_fully","Number_partially","Number_unvacc"),
-        group=c("Fully Vaccinated","Partially Vaccinated","Unvaccinated")
-      ))%>%
-      mutate(group=factor(group,levels=c("Unvaccinated","Partially Vaccinated","Fully Vaccinated")))%>%
+        name=c("Number_boosted", "Number_fully","Number_partially","Number_unvacc"),
+        group=c("Boosted", "Fully Vaccinated","Partially Vaccinated","Unvaccinated")
+      ))%>% 
+      mutate(group=factor(group,levels=c("Unvaccinated","Partially Vaccinated","Fully Vaccinated","Boosted")))%>%
       ggplot(aes(x=group,y=value,fill=factor(Category)))+geom_bar(position="stack",stat="identity")+
       xlab("")+ylab("Number of People")
   }

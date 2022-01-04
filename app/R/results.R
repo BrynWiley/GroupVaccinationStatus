@@ -1,15 +1,15 @@
 #This file contains functions to format prediction results and group data
 #into predicted numbers of people in the group of each vaccination status
 
-library(tidyverse)
-library(lubridate)
+# library(tidyverse)
+# library(lubridate)
 
 #'A function to transform the predicted proportions of each Location, Region, and Age
 #'along with number of individuals into the predicted number of each vaccinated status.
 #'@description A function to transform vaccination proportion and group data into numbers of each status.
 #'@param pop_data A data frame with information on the group. Needs to have Location, Region, Age, and Number of People.
 #'@param prediction_data A data frame with the predicted vaccination proportion from each Date, Location, Region, and Age in pop_data. Needs to have Date, Location, Region, Age,
-#'Portion_1, Proportion_2, and upper and lower bounds on Proportion_1 and Proportion_2, named Proportion_1_lower , Proportion_1_upper, Proportion_2_lower, and Proportion_2_upper, if uncertainty = TRUE.
+#'Portion_1, Proportion_2, Proportion_3 and upper and lower bounds on Proportion_1, Proportion_2, and Proportion_3 named Proportion_1_lower , Proportion_1_upper, Proportion_2_lower, Proportion_2_upper, Proportion_3_lower, and Proportion_3_upper, if uncertainty = TRUE.
 #'@param uncertainty A logical singleton indicating if estimated confidence intervals are required
 #'@return A data frame with predicted numbers and proportions of group members with each vaccination status,
 #'grouped by Location, Region, and Age. This data frame also contains upper and lower bounds if uncertainty is TRUE
@@ -38,6 +38,13 @@ get_results <- function(pop_data,prediction_data, uncertainty=TRUE){
           Proportion_partially_lower=Number_partially_lower/N,
           Proportion_partially_upper=Number_partially_upper/N,
           
+          Number_boosted = (data$Portion_3)*data$`Number of People`,
+          Number_boosted_lower = data$Portion_3_lower * data$`Number of People`,
+          Number_boosted_upper = data$Portion_3_upper * data$`Number of People`,
+          Proportion_boosted = Number_boosted/N,
+          Proportion_boosted_lower = Number_boosted_lower/N,
+          Proportion_boosted_upper = Number_boosted_upper/N,
+          
           Number_unvacc = (1-data$Portion_1)*data$`Number of People`,
           Number_unvacc_lower = max((1-data$Portion_1_upper)*data$`Number of People`,0),
           Number_unvacc_upper = (1-data$Portion_1_lower)*data$`Number of People`,
@@ -52,6 +59,8 @@ get_results <- function(pop_data,prediction_data, uncertainty=TRUE){
           Proportion_fully = Number_fully/N,
           Number_partially = (data$Portion_1-data$Portion_2)*data$`Number of People`,
           Proportion_partially = Number_partially/N,
+          Number_boosted = data$Portion_3 * data$`Number of People`,
+          Proportion_boosted = Number_boosted / N,
           Number_unvacc = (1-data$Portion_1)*data$`Number of People`,
           Proportion_unvacc = Number_partially/N
         ))
@@ -74,12 +83,13 @@ get_total_results <- function(results_data, pop_data, uncertainty=TRUE){
   total_fully_vaccinated <- sum(results_data$Number_fully)
   total_unvaccinated <- sum(results_data$Number_unvacc)
   total_partially_vaccinated <- sum(results_data$Number_partially)
+  total_boosted <- sum(results_data$Number_boosted)
   
   if(!uncertainty){
     return(tibble(
-      Status=c("Unvaccinated","Partially Vaccinated","Fully Vaccinated"),
-      Number=c(total_unvaccinated,total_partially_vaccinated,total_fully_vaccinated),
-      Proportion=c(total_unvaccinated/N,total_partially_vaccinated/N,total_fully_vaccinated/N)
+      Status=c("Unvaccinated","Partially Vaccinated","Fully Vaccinated","Boosted"),
+      Number=c(total_unvaccinated,total_partially_vaccinated,total_fully_vaccinated,total_boosted),
+      Proportion=c(total_unvaccinated/N,total_partially_vaccinated/N,total_fully_vaccinated/N,boosted/N)
     ))
   }
   
@@ -87,11 +97,14 @@ get_total_results <- function(results_data, pop_data, uncertainty=TRUE){
   lower_total_fully_vaccinated <- sum(results_data$Number_fully_lower)
   lower_total_unvaccinated <-  sum(results_data$Number_unvacc_lower)
   lower_total_partially_vaccinated <- sum(results_data$Number_partially_lower)
+  lower_total_boosted <- sum(results_data$Number_boosted)
 
     
   upper_total_fully_vaccinated <- sum(results_data$Number_fully_upper)
   upper_total_unvaccinated <-  sum(results_data$Number_unvacc_upper)
   upper_total_partially_vaccinated <- sum(results_data$Number_partially_upper)
+  upper_total_boosted <- sum(results_data$Number_boosted)
+  
   
   proportion_fully_CI <- c(max(lower_total_fully_vaccinated/N-1/sqrt(N),0),
                            min(upper_total_fully_vaccinated/N+1/sqrt(N),N))
@@ -99,14 +112,16 @@ get_total_results <- function(results_data, pop_data, uncertainty=TRUE){
                                min(upper_total_partially_vaccinated/N+1/sqrt(N),N))
   proportion_unvaccianted_CI <-  c(max(lower_total_unvaccinated/N-1/sqrt(N),0),
                                    min(upper_total_unvaccinated/N+1/sqrt(N),N))
+  proportion_boosted_CI <- c(max(lower_total_boosted/N-1/sqrt(N),0),
+                             min(upper_total_boosted/N+1/sqrt(N),N))
   
   return(tibble(
-    Status=c("Unvaccinated","Partially Vaccinated","Fully Vaccinated"),
-    Number=c(total_unvaccinated,total_partially_vaccinated,total_fully_vaccinated),
-    `Number Lower Bound`=c(proportion_unvaccianted_CI[1]*N,proportion_partially_CI[1]*N,proportion_fully_CI[1]*N),
-    `Number Upper Bound`=c(proportion_unvaccianted_CI[2]*N,proportion_partially_CI[2]*N,proportion_fully_CI[2]*N),
-    Proportion=c(total_unvaccinated/N,total_partially_vaccinated/N,total_fully_vaccinated/N),
-    `Proportion Lower Bound`=c(proportion_unvaccianted_CI[1],proportion_partially_CI[1],proportion_fully_CI[1]),
-    `Proportion Upper Bound`=c(proportion_unvaccianted_CI[2],proportion_partially_CI[2],proportion_fully_CI[2])
+    Status=c("Unvaccinated","Partially Vaccinated","Fully Vaccinated","Boosted"),
+    Number=c(total_unvaccinated,total_partially_vaccinated,total_fully_vaccinated,total_boosted),
+    `Number Lower Bound`=c(proportion_unvaccianted_CI[1]*N,proportion_partially_CI[1]*N,proportion_fully_CI[1]*N,proportion_boosted_CI[1]*N),
+    `Number Upper Bound`=c(proportion_unvaccianted_CI[2]*N,proportion_partially_CI[2]*N,proportion_fully_CI[2]*N,proportion_boosted_CI[2]*N),
+    Proportion=c(total_unvaccinated/N,total_partially_vaccinated/N,total_fully_vaccinated/N,total_boosted/N),
+    `Proportion Lower Bound`=c(proportion_unvaccianted_CI[1],proportion_partially_CI[1],proportion_fully_CI[1],proportion_boosted_CI[1]),
+    `Proportion Upper Bound`=c(proportion_unvaccianted_CI[2],proportion_partially_CI[2],proportion_fully_CI[2],proportion_boosted_CI[2]),
   ))
 }
