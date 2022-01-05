@@ -11,12 +11,12 @@
 #' A function to return a logistic predition model. Attempts to fit a logistic model with
 #' nls with a starting value for the asymptote of the maximum allowable level for the response value. Also
 #' uses weighted least squares, with more recent observations getting a higher weight.
-#' If this model cannot be fit, fits a linear regression instead, and returns the model.
+#' If this model cannot be fit, returns FALSE
 #' @description A function to attempt to fit a weighted logistic model
 #' @param x The independent variable for regression, must be a numeric vector
 #' @param y The dependent variable for regression, must be a numeric vector
 #' @param max_level the maximum allowed value for the asymptote for a logistic model
-#' @return A regression model from either the nls logistic model fit, or a lm linear model fit if this
+#' @return A regression model from either the nls logistic model fit, or FALSE t if this
 #' isn't possible
 predict_logistic <- function(x,y,max_level){
   df <- data.frame(
@@ -24,9 +24,7 @@ predict_logistic <- function(x,y,max_level){
   )
   #We don't allow asymptotes below the current value
   min_level <- max(y)
-  print(1)
   model <- tryCatch({
-    print(2)
     SS <- getInitial(y~SSlogis(x,Asym,xmid,scal),data=df)
     #Make sure the asymptote (SS[1] is between min_level and max_level)
     if(SS[1]>max_level & max_level > max(y)){
@@ -58,12 +56,9 @@ predict_logistic <- function(x,y,max_level){
         algorithm="port")},
     #If the model fit doesn't fit, use a linear regression instead
     error=function(c){
-      lm(y~x,data=df)
-    },
-    warning=function(c){
-      lm(y~x,data=df)
+      FALSE
     })
-  print(3)
+  
   return(model)
 }
 
@@ -80,7 +75,7 @@ vaccine_forecast <- function(observations,forecast_method,max_level,prediction_d
   if(!forecast_method %in% types){
     return(-1)
   }
-  
+
   date <- prediction_dates
   #Predicted vaccination level
   fit <- NULL
@@ -90,41 +85,10 @@ vaccine_forecast <- function(observations,forecast_method,max_level,prediction_d
   lower <- NULL
   
   max_observed <- max(observations$level)
+
   num_dates <- length(prediction_dates)
-  #linear regression
-  if(forecast_method == types[3]){
-    #Filter for past 3 weeks of available non-zero observations
-    observations <- observations %>%
-      filter(date >= max(observations$date)-days(21), level>0, !is.na(level))
-    #Not enough observations, hold rate constant (we can't perform a reasonable regression)
-    if(nrow(observations)<=2 & nrow(observations)>0){
-      fit=rep(max_observed,num_dates)
-      upper=rep(max_observed,num_dates)
-      lower=rep(max_observed,num_dates)
-    }else if(nrow(observations)<=0){
-      fit=rep(0,length(prediction_dates))
-      upper=rep(0,length(prediction_dates))
-      lower=rep(0,length(prediction_dates))
-    #Otherwise, perform regression, and include prediction intervals
-    } else {
-      reg <- lm(level~date,data=observations)
-      predictions <- predict(reg, newdata=data.frame(date=prediction_dates),
-                             interval="prediction")
-      if(nrow(predictions)==1){
-        if(predictions[1]>max_level){
-          predictions <- rep(max_level,3)
-        }
-        fit=predictions[1]
-        upper=predictions[3]
-        lower=predictions[2]
-      } else {
-        fit=predictions[,1]
-        upper=predictions[,3]
-        lower=predictions[,2]
-      }
-    }
-  }
   
+  reg = TRUE
   #logistic regression
   if(forecast_method==types[2]){
     #Filter for past 42 days of available observations
@@ -141,20 +105,54 @@ vaccine_forecast <- function(observations,forecast_method,max_level,prediction_d
       lower=rep(0,num_dates)
     } else {
       reg <- predict_logistic(as.numeric(observations$date),observations$level,max_level)
-      predictions <- tryCatch({
-        predFit(reg,newdata=data.frame(x=as.numeric(prediction_dates)),
-                interval="prediction",level=0.95)
-      },
-      error=function(c){
-        reg <- lm(level~date,data=observations)
-        predFit(reg,newdata=data.frame(x=as.numeric(prediction_dates)),
-                interval="prediction",level=0.95)
-      },
-      warning=function(c){
-        reg <- lm(level~date,data=observations)
-        predFit(reg,newdata=data.frame(x=as.numeric(prediction_dates)),
-                interval="prediction",level=0.95)
-      })
+      if(!is.logical(reg)){
+        predictions <- tryCatch({
+          predFit(reg,newdata=data.frame(x=as.numeric(prediction_dates)),
+                  interval="prediction",level=0.95)
+        },
+        error=function(c){
+          forecast_method=types[3]
+          reg <- lm(level~date,data=observations)
+          predFit(reg,newdata=data.frame(x=as.numeric(prediction_dates)),
+                  interval="prediction",level=0.95)
+        })
+        if(nrow(predictions)==1){
+          if(predictions[1]>max_level){
+            predictions <- rep(max_level,3)
+          }
+          fit=predictions[1]
+          upper=predictions[3]
+          lower=predictions[2]
+        } else {
+          fit=predictions[,1]
+          upper=predictions[,3]
+          lower=predictions[,2]
+        }
+      } else {
+        forecast_method=types[3]
+      }
+    }
+  }
+  
+  #linear regression
+  if(forecast_method == types[3] | is.logical(reg)){
+    #Filter for past 3 weeks of available non-zero observations
+    observations <- observations %>%
+      filter(date >= max(observations$date)-days(21), level>0, !is.na(level))
+    #Not enough observations, hold rate constant (we can't perform a reasonable regression)
+    if(nrow(observations)<=2 & nrow(observations)>0){
+      fit=rep(max_observed,num_dates)
+      upper=rep(max_observed,num_dates)
+      lower=rep(max_observed,num_dates)
+    }else if(nrow(observations)<=0){
+      fit=rep(0,length(prediction_dates))
+      upper=rep(0,length(prediction_dates))
+      lower=rep(0,length(prediction_dates))
+      #Otherwise, perform regression, and include prediction intervals
+    } else {
+      reg <- lm(level~date,data=observations)
+      predictions <- predict(reg, newdata=data.frame(date=prediction_dates),
+                             interval="prediction")
       if(nrow(predictions)==1){
         if(predictions[1]>max_level){
           predictions <- rep(max_level,3)
@@ -180,6 +178,9 @@ vaccine_forecast <- function(observations,forecast_method,max_level,prediction_d
   #Make sure predictions and their intervals are greater than the greatest observation (vaccination rates can't go down),
   #and less than the maximum allowable value
   min_level <- max(observations$level)
+  print(fit)
+  print(prediction_dates)
+
   if(min_level>max_level){
     min_level <- max_level
   }
@@ -262,7 +263,7 @@ get_predictions <- function(pop_data, prediction_date,vaccine_data,forecast_meth
         select(Date,Portion_3)%>%
         rename(date=Date,level=Portion_3)
       
-      print(to_pass_first)
+      
       predictions_first <- vaccine_forecast(to_pass_first,forecast_method,max_rate,prediction_dates)
       
       

@@ -300,7 +300,7 @@ ui <- fluidPage(
                         to increasing error the further the event is into the future."),
                       hr(),
                       p(tags$strong("Vaccination data "),
-                        "is taken from Our World in Data, the US CDC, and the Public Health Agency of Canada. 
+                        "is taken from Our World in Data, the US CDC, the BC CDC, and the Public Health Agency of Canada. 
                         There are some countries who will primarily report total doses given instead of first or second doses. If a country has not reported a quantity for first or second doses within
                         the past month we assume that the proportion fully vaccinated remains constant from the last date it was reported and all new reported doses are first doses. This is conservative with regards 
                         to fully vaccinated individuals but optimistic to the number partially vaccinated. Currently, the countries to which this applies are: ", sub("(.*),", "\\1 and",paste(bad_locations, collapse = ", "))),

@@ -66,8 +66,9 @@ get_vaccine_data <- function(){
            Region=NA,Age=NA)%>%
     select(Date,Location,Region,Age,Portion_1,Portion_2,Portion_3)%>%
     mutate(Portion_1=if_else(Portion_1>1.0,1.0,Portion_1)) %>%
-    mutate(Date=as_date(Date)) %>%
-    filter(!Location %in% c("United States","Canada"))
+    mutate(Date=as_date(Date)) 
+  # %>%
+  #   filter(!Location %in% c("United States","Canada"))
   
   #owid data with age groups, fill in missing lower age groups
   owid_age_data <- read_csv("https://github.com/owid/covid-19-data/raw/master/public/data/vaccinations/vaccinations-by-age-group.csv")%>%
@@ -148,7 +149,8 @@ get_vaccine_data <- function(){
     mutate(Region=if_else(Region=="United States",as.character(NA),Region))%>%
     ungroup(location)%>%
     select(Date,Location,Region,Age,Portion_1,Portion_2,Portion_3) %>%
-    mutate(Date=as_date(Date))
+    mutate(Date=as_date(Date)) %>%
+    filter(!(is.na(Region)&is.na(Age)))
   
   
   canada_data <- get_canada_pop_data()
@@ -164,6 +166,8 @@ get_canada_pop_data <- function(){
   canada_vaccine_age <- read_csv("https://health-infobase.canada.ca/src/data/covidLive/vaccination-coverage-byAgeAndSex.csv",col_types = cols(.default="c"),na = c("", "NA","na")) %>%
     mutate_at(vars(matches("num")),as.numeric) %>%
     mutate(age=if_else(age=="05-11","5-11",age))%>%
+    mutate(age=if_else(age=="80+","70+",age))%>%
+    mutate(age=if_else(age=="70-79","70+",age))%>%
     group_by(prename,age,week_end)%>%
     summarise(Num1=sum(numtotal_atleast1dose),
               Num2=sum(numtotal_fully),
@@ -205,9 +209,9 @@ get_canada_pop_data <- function(){
                          `Age group` %in% age2.3 ~ "40-49",
                          `Age group` %in% age3 ~ "50-59",
                          `Age group` %in% age4 ~ "60-69",
-                         `Age group` %in% c(age5,age6) ~ "70-79",
+                         #`Age group` %in% c(age5,age6) ~ "70-79",
                          #`Age group` %in% age6 ~ "75-79",
-                         `Age group` %in% age7 ~ "80+",
+                         `Age group` %in% c(age5,age6,age7) ~ "70+",
                          `Age group` == "All ages" ~ "Total",
                          TRUE ~ NA_character_))%>%
     filter(!is.na(age))%>%
@@ -222,13 +226,20 @@ get_canada_pop_data <- function(){
     rename(Region=GEO)%>%
     select(Location,Region,Age,Population)
   
+  #TEMPORARY! Use archived and manually updated BC CDC released excel files for BC Portion_3 data
+  bc_data <- read_csv("bc_data.csv")
+  
   canada_pop_data %>%
     inner_join(canada_vaccine_age)%>%
     mutate(Portion_1=Num1/Population,
            Portion_2=Num2/Population,
            Portion_3=Num3/Population)%>%
     select(Date,Location,Region,Age,Portion_1,Portion_2,Portion_3)%>%
-    #filter(!(is.na(Age)&is.na(Region))) %>%
+    full_join(.,bc_data,by=c("Date", "Location","Region","Age")) %>%
+    mutate(Portion_3=if_else(is.na(Portion_3.x),Portion_3.y,Portion_3.x))%>%
+    select(!c("Portion_3.y","Portion_3.x")) %>%
+    distinct()%>%
+    filter(!(is.na(Age)&is.na(Region))) %>%
     mutate(Date=as_date(Date))
   
 }
