@@ -178,8 +178,6 @@ vaccine_forecast <- function(observations,forecast_method,max_level,prediction_d
   #Make sure predictions and their intervals are greater than the greatest observation (vaccination rates can't go down),
   #and less than the maximum allowable value
   min_level <- max(observations$level)
-  print(fit)
-  print(prediction_dates)
 
   if(min_level>max_level){
     min_level <- max_level

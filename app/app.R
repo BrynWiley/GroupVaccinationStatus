@@ -85,12 +85,15 @@ ui <- fluidPage(
                                  ))
                                ),
                                actionButton("start","Start",
-                                            style="color: #fff; background-color: #337ab7; border-color: #2e6da4; padding:5px; font-size:150%")
+                                            style="color: #fff; background-color: #337ab7; border-color: #2e6da4; padding:5px; font-size:150%"),
+                               p(),
+                               p(tags$strong("2022-01-04 Update: "),"Now includes predictions for booster shots. In some regions data retrieval is difficult for these additional doses. This results in a small number of data points used by this app, which may result in decreased prediction performance.")
                         ),
                         column(width=4,
                                tags$img(src="virus_image.png",width="300px"))
                       ),
                       hr(),
+                      
                       p("Created by Bryn Wiley. Thank you to Dr. Sarah Otto, Dr. Daniel J. McDonald, and the BC COVID-19 Modelling Group for their substantial input and suggestions.")
              ),
              #First Tab##########################################################################################
