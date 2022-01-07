@@ -24,9 +24,9 @@ get_results <- function(pop_data,prediction_data, uncertainty=TRUE){
       if(uncertainty){
         return(tibble(
           Date=max(data$Date),
-          Number_fully = data$Portion_2 * data$`Number of People`,
-          Number_fully_lower = data$Portion_2_lower * data$`Number of People`,
-          Number_fully_upper = data$Portion_2_upper * data$`Number of People`,
+          Number_fully = (data$Portion_2-data$Portion_3) * data$`Number of People`,
+          Number_fully_lower = (data$Portion_2_lower-data$Portion_3_lower) * data$`Number of People`,
+          Number_fully_upper = (data$Portion_2_upper-data$Portion_3_upper) * data$`Number of People`,
           Proportion_fully = Number_fully/N,
           Proportion_fully_lower = Number_fully_lower/N,
           Proportion_fully_upper = Number_fully_upper/N,
@@ -55,7 +55,7 @@ get_results <- function(pop_data,prediction_data, uncertainty=TRUE){
       } else {
         return(tibble(
           Date=max(data$Date),
-          Number_fully = data$Portion_2 * data$`Number of People`,
+          Number_fully = (data$Portion_2-data$Portion_3) * data$`Number of People`,
           Proportion_fully = Number_fully/N,
           Number_partially = (data$Portion_1-data$Portion_2)*data$`Number of People`,
           Proportion_partially = Number_partially/N,
